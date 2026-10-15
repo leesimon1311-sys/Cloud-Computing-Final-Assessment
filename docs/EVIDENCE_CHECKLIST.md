@@ -53,16 +53,34 @@ printed, and avoid including your whole desktop.
 
 ## Appendix F — Security and Database
 
-- [ ] **F1** `SHOW GRANTS FOR 'inventory_app'@'localhost'` output
-- [ ] **F2** Browser showing **403 Forbidden** for `http://localhost/inventory/src/db.php`
-- [ ] **F3** The application's Activity Log page with sign-ins and stock changes recorded
-- [ ] **F4** DevTools Network → Headers showing `Content-Security-Policy` and
-      `X-Frame-Options` on a response
-- [ ] **F5** Terminal output of `tools\backup_local.ps1` with the dump file and size
-- [ ] **F6** `sql/schema_mysql.sql` or a phpMyAdmin structure view of the tables
+Most of this is phpMyAdmin. These are the strongest marks-per-screenshot in the whole
+appendix, because they directly answer *"avoid using an unsecured default database
+configuration"*.
 
-**Never capture:** `.env` contents, the `users` table, installer output containing a
-password, Render connection strings, or the `INSTALL_TOKEN` value.
+- [ ] **F1** phpMyAdmin **login screen** at `http://localhost/phpmyadmin/` while signed out.
+      A stock XAMPP install signs in as root automatically and cannot produce this screen,
+      so it is proof on its own that you replaced the default
+- [ ] **F2** SQL tab → `SHOW GRANTS FOR 'inventory_app'@'localhost';` showing only
+      SELECT/INSERT/UPDATE/DELETE on `inventory_db`, and nothing on `*.*`
+- [ ] **F3** `users` table → **Browse**, showing `password_hash` full of `$2y$10$...`
+      values. A bcrypt hash is safe to show; the password is not
+- [ ] **F4** **User accounts** tab listing `root`, `pma` and `inventory_app` with their
+      hosts — shows separate accounts rather than everything running as root
+- [ ] **F5** `products` table → **Structure**, showing column types, the three indexes and
+      the foreign key to `categories`
+- [ ] **F6** `inventory_db` → **Export** tab (SQL format) before pressing Go — the paper
+      asks for "SQL export where applicable"
+- [ ] **F7** Browser showing **403 Forbidden** for `http://localhost/inventory/src/db.php`
+- [ ] **F8** DevTools Network → Headers showing `Content-Security-Policy` and
+      `X-Frame-Options` on a response
+- [ ] **F9** The application's **Activity Log** page with sign-ins and stock changes recorded
+- [ ] **F10** Terminal output of `tools\backup_local.ps1` with the dump file name and size
+- [ ] **F11** *(optional, strong)* A before/after of `config.inc.php` — the backed-up
+      original with `auth_type = 'config'` beside the hardened `auth_type = 'cookie'`
+
+**Never capture:** `CREDENTIALS-LOCAL.txt`, `.env` contents, the root or `inventory_app`
+password, installer output containing a password, Render connection strings, or the
+`INSTALL_TOKEN` value. Blur the `controlpass` line if `config.inc.php` appears in F11.
 
 ## Appendix G — Cost and Pricing
 

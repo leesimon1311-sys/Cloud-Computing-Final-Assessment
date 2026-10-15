@@ -1,5 +1,6 @@
 # Local environment configuration - NEVER commit real credentials
 .env
+CREDENTIALS-LOCAL.txt
 
 # Editor / OS noise
 .vscode/

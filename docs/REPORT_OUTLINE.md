@@ -26,9 +26,34 @@ Collected from the running deployments. Use these rather than inventing numbers.
 | PHP | 8.2.12 |
 | Database | MariaDB 10.4.32 |
 | Stack installed via | XAMPP |
+| Database administration | phpMyAdmin 5.x (bundled with XAMPP) |
 | Local URL | `http://localhost/inventory/` |
 | LAN URL | `http://10.235.219.205/inventory/` *(re-check, it changes)* |
 | Database account | `inventory_app@localhost`, granted only SELECT/INSERT/UPDATE/DELETE on `inventory_db` |
+
+### Database hardening performed (section 5 material)
+
+XAMPP's defaults were replaced. Each row is a real change you made, with the attack it
+prevents — this is far stronger than generic security theory:
+
+| Default in XAMPP | Changed to | What it prevents |
+|---|---|---|
+| `root` with no password on 3 host entries | Strong password on each | Total database takeover by anyone reaching the machine |
+| phpMyAdmin `auth_type = 'config'` | `'cookie'` | phpMyAdmin signing in as root automatically, with no login at all |
+| `AllowNoPassword = true` | `false` | Password-less sign in |
+| `blowfish_secret = 'xampp'` | Random 32-character secret | Forged or decrypted phpMyAdmin session cookies |
+| `pma` control account with no password | Generated password, scoped to `phpmyadmin` only | A second unprotected account |
+| Wildcard grants on the `test` database | Removed, database dropped | Any account reading and writing `test` |
+| Application connecting as `root` | `inventory_app` with 4 privileges on 1 database | SQL injection or a code flaw being able to DROP tables or read other databases |
+
+Application-level controls, all implemented in code: prepared statements with bound
+parameters, bcrypt password hashing, CSRF tokens verified with `hash_equals()`, output
+escaping, `HttpOnly`/`SameSite`/`Secure` session cookies, session id regeneration on login,
+login lockout after 5 failed attempts, CSP and `X-Frame-Options` headers, and `.htaccess`
+denial of `src/`, `views/`, `sql/` and `tools/`.
+
+Verified by test: 53 automated checks on the application and 12 on phpMyAdmin, including
+that a blank password is refused and that `src/db.php` returns 403.
 
 ### Cloud environment
 
@@ -165,11 +190,14 @@ Cover: how the application and database are protected in each environment; the s
 responsibility comparison; main risks and weaknesses of both; backup, maintenance, update
 and recovery; reliability evaluation with major risks; and how all three could be improved.
 
-You have real material here rather than generic theory, because you implemented it:
-prepared statements, bcrypt password hashing, CSRF tokens, escaped output, session
-hardening, login lockout, security headers, source directories denied by `.htaccess`, and
-the replacement of the XAMPP `root`-with-no-password default with a least-privilege
-account. Describe what each one defends against.
+You have real material here rather than generic theory, because you implemented it — the
+hardening table near the top of this document lists every XAMPP default you replaced and
+the attack each change prevents. Work through it and describe what each one defends
+against, rather than listing security features in the abstract.
+
+The phpMyAdmin login screen is worth calling out explicitly: a stock XAMPP install signs
+in as root automatically and never shows one, so its existence is itself the evidence that
+the default configuration was replaced.
 
 For shared responsibility, the honest split: the provider secures the physical hardware,
 the hypervisor, the host operating system, the network and the managed database engine,

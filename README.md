@@ -58,6 +58,10 @@ re-implemented for the web. The domain model carried over directly:
 - The application connects through a least-privilege database account that holds only
   `SELECT`, `INSERT`, `UPDATE` and `DELETE` — never the MySQL `root` account
 - Credentials live only in `.env`, which is excluded from version control
+- XAMPP's unsecured database defaults are replaced by `tools/secure_mysql.ps1`: every
+  `root` entry and the `pma` control account are given passwords, the `test` database
+  grants are removed, and phpMyAdmin is switched from automatic root sign-in
+  (`auth_type = 'config'`) to cookie authentication with a random 32-character secret
 
 ## Repository layout
 
@@ -76,11 +80,22 @@ render.yaml      Infrastructure as code: web service and managed database
 ## Getting started
 
 Local setup, cloud deployment and evidence collection are documented in
-[docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md).
+[docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md). In outline:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File tools\setup_local.ps1
+# 1. Replace XAMPP's unsecured database defaults (sets passwords, enables
+#    phpMyAdmin's login screen). Prints the new root password.
+powershell -ExecutionPolicy Bypass -File tools\secure_mysql.ps1
+
+# 2. Create the application's least-privilege account and write .env
+powershell -ExecutionPolicy Bypass -File tools\setup_local.ps1 -RootPassword "<root password>"
+
+# 3. Generate your login, then paste the SQL into phpMyAdmin's SQL tab
+C:\xampp\php\php.exe tools\make_admin_sql.php admin "YourStrongPassword"
 ```
 
-Then open the installer URL that the script prints, save the administrator password it
-generates, and sign in at `http://localhost/inventory/`.
+Step 2's schema import can equally be done through **phpMyAdmin → Import** using
+[`sql/inventory_db_import.sql`](sql/inventory_db_import.sql), which creates the database,
+all four tables and the demonstration data in one file.
+
+Then sign in at `http://localhost/inventory/`.
