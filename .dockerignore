@@ -1,0 +1,8 @@
+.git
+.gitignore
+.env
+docs
+backups
+*.md
+!README.md
+tools/setup_local.ps1

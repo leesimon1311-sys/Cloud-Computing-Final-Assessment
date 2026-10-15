@@ -1,0 +1,9 @@
+# Application source is never served directly. Defence in depth: the .htaccess
+# in the project root already routes all traffic into public/.
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>

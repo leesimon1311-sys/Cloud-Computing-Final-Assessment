@@ -1,0 +1,23 @@
+# Everything is served out of public/ so that src/, views/ and sql/ are never
+# reachable from a browser. This rule lets XAMPP serve the application from
+# http://localhost/inventory/ without having to define a virtual host.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^public/ - [L]
+    RewriteRule ^$ public/index.php [L]
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+Options -Indexes
+
+# The .env file holds database credentials and the installer token. Belt and
+# braces: the rewrite above already sends every request into public/.
+<FilesMatch "^\.env">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>

@@ -1,0 +1,17 @@
+# Local environment configuration - NEVER commit real credentials
+.env
+
+# Editor / OS noise
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+*.swp
+
+# Local database dumps and exports (keep these out of the public repo)
+*.dump
+backups/
+
+# Original console prototype (kept locally for reference only)
+*.class
+inventory.dat

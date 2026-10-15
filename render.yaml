@@ -1,0 +1,41 @@
+# ---------------------------------------------------------------------------
+# Infrastructure as code for the cloud deployment.
+#
+# Importing this file (Blueprint -> New Blueprint Instance) creates the web
+# service and its managed PostgreSQL database together, and wires the database
+# connection string into the application automatically.
+#
+# Adjust "region" to the location nearest to you before deploying.
+# ---------------------------------------------------------------------------
+services:
+  - type: web
+    name: inventory-system
+    runtime: docker
+    plan: free
+    region: singapore
+    branch: main
+    healthCheckPath: /health.php
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_NAME
+        value: Inventory Management System
+      - key: APP_TZ
+        value: Asia/Kuala_Lumpur
+      - key: APP_CURRENCY
+        value: RM
+      # Supplied by the managed database below - never typed in by hand.
+      - key: DATABASE_URL
+        fromDatabase:
+          name: inventory-db
+          property: connectionString
+      # Generated once by the platform and kept in its secret store.
+      - key: INSTALL_TOKEN
+        generateValue: true
+
+databases:
+  - name: inventory-db
+    databaseName: inventory
+    user: inventory_app
+    plan: free
+    region: singapore
