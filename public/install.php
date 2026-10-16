@@ -134,9 +134,18 @@ if ($productCount > 0) {
 
 $userCount = (int) q_val('SELECT COUNT(*) FROM users', [], 0);
 
-if ($userCount > 0) {
-    echo "[skip] {$userCount} user account(s) already exist; no account was changed.\n";
-    echo "\nInstallation complete. Open index.php to sign in.\n";
+// Recovery path. A managed free-tier service usually offers no shell, so a
+// forgotten administrator password would otherwise need a database client and
+// the external connection string. Requesting reset_admin issues a new password
+// instead. It is protected by the same INSTALL_TOKEN checked above, and the
+// token should be removed from the environment once recovery is complete.
+$resetRequested = isset($_GET['reset_admin']);
+
+if ($userCount > 0 && !$resetRequested) {
+    echo "[skip] {$userCount} user account(s) already exist; no account was changed.\n\n";
+    echo "Lost the administrator password? Append &reset_admin=1 to this URL and\n";
+    echo "a new one will be issued for the 'admin' account.\n\n";
+    echo "Installation complete. Open index.php to sign in.\n";
     exit;
 }
 
@@ -151,19 +160,31 @@ if (strlen($chosenPassword) >= 8) {
     $generated = true;
 }
 
-q(
-    'INSERT INTO users (username, password_hash, full_name, role, created_at)
-     VALUES (:u, :h, :f, :r, :c)',
-    [
-        'u' => 'admin',
-        'h' => password_hash($password, PASSWORD_DEFAULT),
-        'f' => 'System Administrator',
-        'r' => 'admin',
-        'c' => db_now(),
-    ]
-);
+$hash = password_hash($password, PASSWORD_DEFAULT);
+$adminExists = (int) q_val("SELECT COUNT(*) FROM users WHERE username = 'admin'", [], 0) > 0;
 
-echo "[ ok ] Administrator account created.\n\n";
+if ($adminExists) {
+    q(
+        "UPDATE users SET password_hash = :h, role = 'admin' WHERE username = 'admin'",
+        ['h' => $hash]
+    );
+    error_log('install.php issued a new administrator password from ' . ($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
+    echo "[ ok ] Administrator password reset.\n\n";
+} else {
+    q(
+        'INSERT INTO users (username, password_hash, full_name, role, created_at)
+         VALUES (:u, :h, :f, :r, :c)',
+        [
+            'u' => 'admin',
+            'h' => $hash,
+            'f' => 'System Administrator',
+            'r' => 'admin',
+            'c' => db_now(),
+        ]
+    );
+    echo "[ ok ] Administrator account created.\n\n";
+}
+
 echo "    Username : admin\n";
 echo '    Password : ' . $password . "\n\n";
 
@@ -172,4 +193,6 @@ if ($generated) {
 }
 echo "Change it from the My account page after signing in, and do not include\n";
 echo "it in your report or in any screenshot.\n\n";
-echo "Installation complete. Open index.php to sign in.\n";
+echo "Remove the INSTALL_TOKEN environment variable once you have signed in.\n";
+echo "That disables this page completely.\n\n";
+echo "Done. Open index.php to sign in.\n";
